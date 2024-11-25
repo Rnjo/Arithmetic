@@ -19,7 +19,7 @@ struct MainPracticeView: View {
     var body: some View {
         NavigationView {
             ZStack {
-               // // Background color with animation
+               //// // Background color with animation
                 backgroundColor
                     .edgesIgnoringSafeArea(.all)
                     .opacity(backgroundOpacity)

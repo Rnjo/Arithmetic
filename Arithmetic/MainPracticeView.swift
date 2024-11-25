@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 import AudioToolbox // Import the AudioToolbox framework for system sounds
 
 struct MainPracticeView: View {
@@ -12,31 +13,33 @@ struct MainPracticeView: View {
     @State private var timeRemaining = 4 // Default to 4 seconds
     @State private var showLevelUp = false
     @State private var showSettings = false // State for showing settings view
+    @State private var correctSoundPlayer: AVAudioPlayer?
+    @State private var errorSoundPlayer: AVAudioPlayer?
     @State private var timer: Timer? = nil // Add a timer property to manage it
     @State private var backgroundOpacity: Double = 0 // Opacity for background color
     @State private var backgroundColor: Color = .white // Background color to be updated
-
+    
     var body: some View {
         NavigationView {
             ZStack {
-               //// // Background color with animation
+                //// // Background color with animation
                 backgroundColor
                     .edgesIgnoringSafeArea(.all)
                     .opacity(backgroundOpacity)
                     .animation(.easeInOut(duration: 0.5), value: backgroundOpacity)
-
+                
                 VStack(spacing: 20) {
                     Text("Welcome to Practice Mode!")
                         .font(.headline)
-
+                    
                     Text("Level \(userLevel)")
                         .font(.largeTitle)
                         .bold()
-
+                    
                     Text("What is \(currentQuestion)?")
                         .font(.title)
                         .padding()
-
+                    
                     // TextField for entering answer
                     TextField("Enter your answer", text: $userAnswer)
                         .keyboardType(.decimalPad) // Use decimal pad, but we will handle the input manually
@@ -48,7 +51,7 @@ struct MainPracticeView: View {
                                 userAnswer = newValue.replacingOccurrences(of: ".", with: "-")
                             }
                         }
-
+                    
                     Button("Submit Answer") {
                         checkAnswer()
                     }
@@ -56,14 +59,14 @@ struct MainPracticeView: View {
                     .background(Color.blue)
                     .foregroundColor(.white)
                     .cornerRadius(10)
-
+                    
                     if showLevelUp {
                         Text("Level Up! 🎉")
                             .font(.largeTitle)
                             .foregroundColor(.green)
                             .transition(.scale)
                     }
-
+                    
                     Text("Time remaining: \(timeRemaining) seconds")
                         .font(.headline)
                         .padding()
@@ -80,6 +83,8 @@ struct MainPracticeView: View {
                 }
             }
             .onAppear {
+                configureAudioSession()
+                loadSounds()
                 generateQuestion()
                 startTimer()
             }
@@ -92,7 +97,7 @@ struct MainPracticeView: View {
             }
         }
     }
-
+    
     /// Generates a new question based on the user's current level
     func generateQuestion() {
         // Invalidate any existing timer before generating the question
@@ -107,7 +112,22 @@ struct MainPracticeView: View {
         
         startTimer() // Start the timer for the new question
     }
-
+    func loadSounds() {
+        if let correctSoundURL = Bundle.main.url(forResource: "correct_sound", withExtension: "mp3") {
+            correctSoundPlayer = try? AVAudioPlayer(contentsOf: correctSoundURL)
+        }
+        if let errorSoundURL = Bundle.main.url(forResource: "error_sound", withExtension: "mp3") {
+            errorSoundPlayer = try? AVAudioPlayer(contentsOf: errorSoundURL)
+        }
+    }
+    func playSuccessSound() {
+        correctSoundPlayer?.play()
+    }
+    
+    func playErrorSound() {
+        errorSoundPlayer?.play()
+    }
+    
     /// Checks if the user's answer is correct
     func checkAnswer() {
         if let userAnswer = Double(userAnswer), abs(userAnswer - correctAnswer) < 0.001 {
@@ -126,7 +146,7 @@ struct MainPracticeView: View {
             generateQuestion()
         }
     }
-
+    
     /// Flashes the background in green or red based on correctness
     func flashBackground(isCorrect: Bool) {
         if isCorrect {
@@ -143,7 +163,7 @@ struct MainPracticeView: View {
             }
         }
     }
-
+    
     /// Increments the user's level and shows the level-up animation
     func incrementLevel() {
         userLevel += 1 // Increment level
@@ -154,7 +174,14 @@ struct MainPracticeView: View {
             showLevelUp = false
         }
     }
-
+    func configureAudioSession() {
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [])
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch {
+            print("Failed to configure audio session: \(error)")
+        }
+    }
     /// Starts the timer for the current question
     func startTimer() {
         timer?.invalidate()  // Invalidate any existing timer
@@ -166,7 +193,7 @@ struct MainPracticeView: View {
             // For every 10 levels, add 1 second to the timer
             timeRemaining = 4 + ((userLevel - 1) / 10)
         }
-
+        
         // Create a new timer and start it
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
             if timeRemaining > 0 {
@@ -178,15 +205,6 @@ struct MainPracticeView: View {
             }
         }
     }
-
+    
     /// Play the success sound for correct answers
-    func playSuccessSound() {
-        AudioServicesPlaySystemSound(1025) // Success sound ID
-    }
-
-    /// Play the error sound for incorrect answers
-    func playErrorSound() {
-        AudioServicesPlaySystemSound(1073) // Error sound ID
-    }
 }
-

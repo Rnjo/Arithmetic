@@ -1,3 +1,11 @@
+//
+//  SceneDelegate.swift
+//  Arithmetic
+//
+//  Created by Mihir Kotamraju on 11/25/24.
+//
+
+
 import UIKit
 import SwiftUI
 

@@ -1,4 +1,5 @@
 import SwiftUI
+
 @main
 struct ArithmeticApp: App {
     @StateObject private var appState = AppState()
@@ -19,6 +20,10 @@ struct ArithmeticApp: App {
                 SettingsView(userLevel: $appState.userLevel)
                     .environmentObject(appState)
             }
+        }
+        .onChange(of: appState.currentView) { newValue in
+            // Debug the view transition state
+            print("Transitioning to new view: \(newValue)")
         }
     }
 }

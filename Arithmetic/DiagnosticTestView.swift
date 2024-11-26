@@ -7,12 +7,12 @@ struct DiagnosticTestView: View {
 
     @State private var currentQuestionIndex = 0
     @State private var questions: [(question: String, answer: Double)] = []
-    @State private var userAnswers: [String] = []
+    @State private var userAnswers: [String] = [] // Ensure this is initialized properly during setup
     @State private var score = 0
-    @State private var totalTimeTaken: Double = 0.0 // Total time for all questions
+    @State private var totalTimeTaken: Double = 0.0
     @State private var showResults = false
     @State private var timer: Timer?
-    @State private var timeRemaining = 8  // 8-second timer for each question
+    @State private var timeRemaining = 8
 
     private let totalQuestions = 5
 
@@ -40,7 +40,6 @@ struct DiagnosticTestView: View {
                 .foregroundColor(.white)
                 .cornerRadius(10)
             } else {
-                // Question View
                 Text("Question \(currentQuestionIndex + 1) of \(totalQuestions)")
                     .font(.headline)
 
@@ -52,19 +51,31 @@ struct DiagnosticTestView: View {
 
                 TextField("Enter your answer", text: Binding(
                     get: {
-                        currentQuestionIndex < userAnswers.count ? userAnswers[currentQuestionIndex] : ""
+                        // Ensure the currentQuestionIndex is valid
+                        if currentQuestionIndex < userAnswers.count {
+                            return userAnswers[currentQuestionIndex]
+                        } else {
+                            return ""
+                        }
                     },
                     set: { newValue in
+                        // Safely set the user answer for the current question
                         if currentQuestionIndex < userAnswers.count {
                             userAnswers[currentQuestionIndex] = newValue
-                        } else {
-                            userAnswers.append(newValue)
                         }
                     }
                 ))
                 .keyboardType(.decimalPad)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding()
+                .onChange(of: userAnswers) { _ in
+                    // Replace period with minus sign
+                    if currentQuestionIndex < userAnswers.count {
+                        if userAnswers[currentQuestionIndex].contains(".") {
+                            userAnswers[currentQuestionIndex] = userAnswers[currentQuestionIndex].replacingOccurrences(of: ".", with: "-")
+                        }
+                    }
+                }
 
                 Text("Time Remaining: \(timeRemaining) seconds")
                     .font(.headline)
@@ -90,16 +101,14 @@ struct DiagnosticTestView: View {
         }
     }
 
-    /// Sets up the questions for the diagnostic test
     func setupQuestions() {
         questions = (1...totalQuestions).map { _ in generateGlobalQuestion(level: gradeLevel) }
-        userAnswers = Array(repeating: "", count: totalQuestions)
+        userAnswers = Array(repeating: "", count: totalQuestions) // Properly initialize userAnswers
         startTimer()
     }
 
-    /// Starts the timer for the current question
     func startTimer() {
-        timer?.invalidate()  // Invalidate any existing timer
+        timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
             if timeRemaining > 0 {
                 timeRemaining -= 1
@@ -109,21 +118,19 @@ struct DiagnosticTestView: View {
         }
     }
 
-    /// Moves to the next question or shows results if all questions are answered
     func moveToNextQuestion() {
         if currentQuestionIndex + 1 < totalQuestions {
             currentQuestionIndex += 1
-            totalTimeTaken += Double(8 - timeRemaining) // Add time taken for this question
-            timeRemaining = 8  // Reset timer for next question
+            totalTimeTaken += Double(8 - timeRemaining)
+            timeRemaining = 8
             startTimer()
         } else {
             showResults = true
-            computeLevel() // Compute user level
+            computeLevel()
             timer?.invalidate()
         }
     }
 
-    /// Checks the user's answer and moves to the next question
     func checkAnswer() {
         guard currentQuestionIndex < questions.count else { return }
 
@@ -135,7 +142,6 @@ struct DiagnosticTestView: View {
         moveToNextQuestion()
     }
 
-    /// Computes the user's initial level based on diagnostic performance
     func computeLevel() {
         let accuracy = Double(score) / Double(totalQuestions)
         let averageTime = totalTimeTaken / Double(totalQuestions)

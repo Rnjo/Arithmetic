@@ -18,6 +18,11 @@ struct DiagnosticTestView: View {
 
     var body: some View {
         VStack(spacing: 20) {
+            Text("Note: Any '.' entered will be automatically replaced with a '-' sign in the keypad.")
+                .font(.subheadline)
+                .foregroundColor(.white)
+                .padding(.top, 20)
+            
             if showResults {
                 Text("Diagnostic Test Results")
                     .font(.largeTitle)
@@ -61,7 +66,9 @@ struct DiagnosticTestView: View {
                     set: { newValue in
                         // Safely set the user answer for the current question
                         if currentQuestionIndex < userAnswers.count {
-                            userAnswers[currentQuestionIndex] = newValue
+                            // Replace period with minus sign
+                            let modifiedValue = newValue.replacingOccurrences(of: ".", with: "-")
+                            userAnswers[currentQuestionIndex] = modifiedValue
                         }
                     }
                 ))
@@ -69,7 +76,7 @@ struct DiagnosticTestView: View {
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding()
                 .onChange(of: userAnswers) { _ in
-                    // Replace period with minus sign
+                    // Additional check to ensure period is replaced
                     if currentQuestionIndex < userAnswers.count {
                         if userAnswers[currentQuestionIndex].contains(".") {
                             userAnswers[currentQuestionIndex] = userAnswers[currentQuestionIndex].replacingOccurrences(of: ".", with: "-")

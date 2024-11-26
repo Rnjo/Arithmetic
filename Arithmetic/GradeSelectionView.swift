@@ -8,6 +8,8 @@ struct GradeSelectionView: View {
         NavigationStack {
             VStack {
                 // Title Text for a more welcoming UI
+                
+
                 Text("Welcome to Arithmetic!")
                     .font(.largeTitle)
                     .fontWeight(.bold)

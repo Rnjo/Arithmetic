@@ -1,3 +1,5 @@
+import Foundation
+
 func generateGlobalQuestion(level: Int) -> (question: String, answer: Double) {
     var num1: Int
     var num2: Int
@@ -8,26 +10,26 @@ func generateGlobalQuestion(level: Int) -> (question: String, answer: Double) {
 
     // Adjust difficulty based on grade level
     switch level {
-    case 1...3: // Grades 1-3 (Basic math, addition and subtraction)
+    case 1...3: // Grades 1-3 (Basic math, addition, subtraction, simple multiplication)
         num1 = Int.random(in: 1...9) // Single-digit numbers
         num2 = Int.random(in: 1...9) // Single-digit numbers
-        operations = ["+", "-"] // Only addition and subtraction
-    case 4...6: // Grades 4-6 (Introduce multiplication and division with single digits)
-        num1 = Int.random(in: 1...9) // Single-digit numbers
-        num2 = Int.random(in: 1...9) // Single-digit numbers
-        operations = ["+", "-", "*", "/"] // Add multiplication and division
-    case 7...8: // Grades 7-8 (Single-digit multiplication, double-digit division allowed)
-        num1 = Int.random(in: 1...9) // Single-digit numbers for multiplication
-        num2 = Int.random(in: 1...9) // Single-digit numbers for multiplication
-        operations = ["+", "-", "*", "/"] // Add multiplication and division
-    case 9...12: // Grades 9-12 (Double-digit numbers and mixed operations)
-        num1 = Int.random(in: 10...99) // Double-digit numbers for multiplication
-        num2 = Int.random(in: 10...20) // Double-digit numbers for multiplication
-        operations = ["+", "-", "*", "/"] // All operations
+        operations = ["+", "-", "*"] // Basic operations
+    case 4...6: // Grades 4-6 (Addition, subtraction, multiplication, division)
+        num1 = Int.random(in: 1...20) // Up to 20 for addition and subtraction
+        num2 = Int.random(in: 1...20) // Up to 20 for division and multiplication
+        operations = ["+", "-", "*", "/"] // Add division
+    case 7...8: // Grades 7-8 (Squares, two-digit multiplication, simple division)
+        num1 = Int.random(in: 1...20) // Numbers 1-20 for squaring
+        num2 = Int.random(in: 1...11) // One number up to 11 for multiplication
+        operations = ["+", "-", "*", "/", "^2"] // Squares included
+    case 9...12: // Grades 9-12 (Squares, cubes, and powers of 2, larger numbers)
+        num1 = Int.random(in: 1...20) // Numbers 1-20 for squaring or cubing
+        num2 = Int.random(in: 1...11) // One number no higher than 11 for multiplication
+        operations = ["+", "-", "*", "/", "^2", "^3", "2^x"] // Add cube and powers of 2
     default:
-        num1 = Int.random(in: 1...9)
-        num2 = Int.random(in: 1...9)
-        operations = ["+"]
+        num1 = Int.random(in: 1...20) // Numbers 1-20 for squaring or cubing
+        num2 = Int.random(in: 1...11) // One number no higher than 11 for multiplication
+        operations = ["+", "-", "*", "/", "^2", "^3", "2^x"] // Add cube and powers of 2
     }
 
     // Randomly pick an operation
@@ -42,28 +44,29 @@ func generateGlobalQuestion(level: Int) -> (question: String, answer: Double) {
         question = "\(num1) - \(num2)"
         answer = Double(num1 - num2)
     case "*":
-        // For grades 1-8, use single-digit multiplication
-        if level <= 8 {
-            num1 = Int.random(in: 1...9) // Single-digit multiplication for lower grades
-            num2 = Int.random(in: 1...9) // Single-digit multiplication
-        }
-        // For grades 9-12, allow two-digit multiplication
-        if level >= 9 {
-            num1 = Int.random(in: 10...99) // Two-digit multiplication for higher grades
-            num2 = Int.random(in: 10...99) // Two-digit multiplication
-        }
         question = "\(num1) * \(num2)"
         answer = Double(num1 * num2)
     case "/":
         // Ensure division only happens if the division result is a whole number (no remainder)
-        // Re-generate num1 and num2 if division results in a non-whole number
         repeat {
             num1 = Int.random(in: 1...99) // Pick a number for num1
             num2 = Int.random(in: 1...99) // Pick a number for num2
         } while num1 % num2 != 0 // Repeat until num1 is perfectly divisible by num2
-
         question = "\(num1) / \(num2)"
         answer = Double(num1) / Double(num2)
+    case "^2":
+        // Square the number for grades 7-8
+        question = "\(num1) ^ 2"
+        answer = Double(num1 * num1) // Square the number
+    case "^3":
+        // Cube the number for grades 9-12
+        question = "\(num1) ^ 3"
+        answer = Double(num1 * num1 * num1) // Cube the number
+    case "2^x":
+        // Power of 2 for grades 9-12
+        let exponent = Int.random(in: 1...8) // Exponent range 1-8
+        question = "2 ^ \(exponent)"
+        answer = pow(2.0, Double(exponent)) // Calculate 2 raised to the power of exponent
     default:
         break
     }

@@ -112,6 +112,7 @@ struct MainPracticeView: View {
         
         startTimer() // Start the timer for the new question
     }
+
     func loadSounds() {
         if let correctSoundURL = Bundle.main.url(forResource: "correct_sound", withExtension: "mp3") {
             correctSoundPlayer = try? AVAudioPlayer(contentsOf: correctSoundURL)
@@ -120,6 +121,7 @@ struct MainPracticeView: View {
             errorSoundPlayer = try? AVAudioPlayer(contentsOf: errorSoundURL)
         }
     }
+
     func playSuccessSound() {
         correctSoundPlayer?.play()
     }
@@ -174,6 +176,7 @@ struct MainPracticeView: View {
             showLevelUp = false
         }
     }
+
     func configureAudioSession() {
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [])
@@ -182,6 +185,7 @@ struct MainPracticeView: View {
             print("Failed to configure audio session: \(error)")
         }
     }
+
     /// Starts the timer for the current question
     func startTimer() {
         timer?.invalidate()  // Invalidate any existing timer
@@ -205,6 +209,4 @@ struct MainPracticeView: View {
             }
         }
     }
-    
-    /// Play the success sound for correct answers
 }

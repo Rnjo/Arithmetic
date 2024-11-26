@@ -12,19 +12,23 @@ class AppState: ObservableObject {
         didSet {
             print("Setting userLevel to \(userLevel)")
             UserDefaults.standard.set(userLevel, forKey: UserDefaultsKeys.userLevel)
-            UserDefaults.standard.synchronize() // Ensure sync immediately
         }
     }
 
-    @Published var currentView: AppView
+    @Published var currentView: AppView {
+        didSet {
+            print("Navigating to \(currentView)")
+        }
+    }
+    
     @Published var diagnosticCompleted: Bool {
         didSet {
             print("Setting diagnosticCompleted to \(diagnosticCompleted)")
             UserDefaults.standard.set(diagnosticCompleted, forKey: UserDefaultsKeys.diagnosticCompleted)
-            UserDefaults.standard.synchronize() // Ensure sync immediately
         }
     }
 
+    // UserDefaults keys
     private enum UserDefaultsKeys {
         static let diagnosticCompleted = "DiagnosticCompleted"
         static let userLevel = "UserLevel"
@@ -32,45 +36,45 @@ class AppState: ObservableObject {
     }
 
     init() {
-        // Load values from UserDefaults
+        // Load stored values from UserDefaults
         let appLaunchedBefore = UserDefaults.standard.bool(forKey: UserDefaultsKeys.appLaunchedBefore)
         let storedDiagnosticCompleted = UserDefaults.standard.bool(forKey: UserDefaultsKeys.diagnosticCompleted)
         let storedUserLevel = UserDefaults.standard.integer(forKey: UserDefaultsKeys.userLevel)
-
-        // Set local properties
-        self.diagnosticCompleted = storedDiagnosticCompleted
-        self.userLevel = storedUserLevel == 0 ? 8 : storedUserLevel // Default to level 8 if not set
-
-        // Debug prints
         
-
-        // Determine the initial view based on the diagnostic state
+        self.diagnosticCompleted = storedDiagnosticCompleted
+        self.userLevel = storedUserLevel == 0 ? 8 : storedUserLevel // Default to level 8
+        
         if !appLaunchedBefore {
+            // First launch setup: show grade selection and then diagnostic
             self.currentView = .gradeSelection
             UserDefaults.standard.set(true, forKey: UserDefaultsKeys.appLaunchedBefore)
         } else {
-            if storedDiagnosticCompleted {
-                self.currentView = .practice // Go to practice if diagnostic is completed
-            } else {
-                self.currentView = .diagnostic // Go to diagnostic if not completed
-            }
+            // If diagnostic is not completed, show diagnostic, otherwise go to mainpractice
+            self.currentView = storedDiagnosticCompleted ? .diagnostic : .practice
         }
 
-        // Debug print for initial view
-        print("Initial currentView set to: \(self.currentView)")
+        // Debug logs
+        print("App initialized: diagnosticCompleted=\(diagnosticCompleted), userLevel=\(userLevel), currentView=\(currentView)")
     }
 
-    // Reset all data and go back to grade selection
+    // Method to mark diagnostic as completed and switch to MainPracticeView
+    func completeDiagnostic() {
+        print("Completing diagnostic...")
+        self.diagnosticCompleted = true
+        self.currentView = .practice
+    }
+
+    // Method to reset all data
     func resetData() {
-        print("Resetting data...")
+        print("Resetting all data...")
         self.diagnosticCompleted = false
         self.userLevel = 8 // Reset userLevel to default grade level
         self.currentView = .gradeSelection
-
+        
+        // Reset UserDefaults
         UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.diagnosticCompleted)
         UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.userLevel)
-        UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.appLaunchedBefore)
 
-        print("After reset, currentView set to: \(self.currentView)")
+        print("Data reset: currentView=\(currentView)")
     }
 }

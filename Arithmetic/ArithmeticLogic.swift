@@ -22,7 +22,7 @@ func generateGlobalQuestion(level: Int) -> (question: String, answer: Double) {
         operations = ["+", "-", "*", "/"] // Add multiplication and division
     case 9...12: // Grades 9-12 (Double-digit numbers and mixed operations)
         num1 = Int.random(in: 10...99) // Double-digit numbers for multiplication
-        num2 = Int.random(in: 10...99) // Double-digit numbers for multiplication
+        num2 = Int.random(in: 10...20) // Double-digit numbers for multiplication
         operations = ["+", "-", "*", "/"] // All operations
     default:
         num1 = Int.random(in: 1...9)

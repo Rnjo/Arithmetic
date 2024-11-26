@@ -1,5 +1,3 @@
-
-
 import SwiftUI
 
 struct DiagnosticTestView: View {
@@ -11,35 +9,37 @@ struct DiagnosticTestView: View {
     @State private var questions: [(question: String, answer: Double)] = []
     @State private var userAnswers: [String] = []
     @State private var score = 0
+    @State private var totalTimeTaken: Double = 0.0 // Total time for all questions
     @State private var showResults = false
     @State private var timer: Timer?
     @State private var timeRemaining = 8  // 8-second timer for each question
-    @State private var timerRunning = false
 
     private let totalQuestions = 5
 
     var body: some View {
-            VStack(spacing: 20) {
-                if showResults {
-                    Text("Diagnostic Test Results")
-                        .font(.largeTitle)
-                        .bold()
+        VStack(spacing: 20) {
+            if showResults {
+                Text("Diagnostic Test Results")
+                    .font(.largeTitle)
+                    .bold()
 
-                    Text("You scored \(score) out of \(totalQuestions).")
-                        .font(.title)
-                        .padding()
-
-                    Button("Complete Test") {
-                        diagnosticCompleted = true
-                        appState.currentView = .practice
-
-                    }
-                    
+                Text("You scored \(score) out of \(totalQuestions).")
+                    .font(.title)
                     .padding()
-                    .background(Color.green)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-                } else {
+
+                Text("Your starting level is \(appState.userLevel).")
+                    .font(.headline)
+                    .padding()
+
+                Button("Complete Test") {
+                    diagnosticCompleted = true
+                    appState.currentView = .practice
+                }
+                .padding()
+                .background(Color.green)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+            } else {
                 // Question View
                 Text("Question \(currentQuestionIndex + 1) of \(totalQuestions)")
                     .font(.headline)
@@ -94,17 +94,17 @@ struct DiagnosticTestView: View {
     func setupQuestions() {
         questions = (1...totalQuestions).map { _ in generateGlobalQuestion(level: gradeLevel) }
         userAnswers = Array(repeating: "", count: totalQuestions)
-        timeRemaining = 8  // Reset the timer to 8 seconds
         startTimer()
     }
 
     /// Starts the timer for the current question
-     public func startTimer() {
-        timerRunning = true
+    func startTimer() {
         timer?.invalidate()  // Invalidate any existing timer
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
             if timeRemaining > 0 {
                 timeRemaining -= 1
+            } else {
+                moveToNextQuestion()
             }
         }
     }
@@ -113,15 +113,17 @@ struct DiagnosticTestView: View {
     func moveToNextQuestion() {
         if currentQuestionIndex + 1 < totalQuestions {
             currentQuestionIndex += 1
+            totalTimeTaken += Double(8 - timeRemaining) // Add time taken for this question
             timeRemaining = 8  // Reset timer for next question
             startTimer()
         } else {
             showResults = true
-            timer?.invalidate()  // Stop the timer when the test is complete
+            computeLevel() // Compute user level
+            timer?.invalidate()
         }
     }
 
-    /// Checks the user's answer and moves to the next question or shows results
+    /// Checks the user's answer and moves to the next question
     func checkAnswer() {
         guard currentQuestionIndex < questions.count else { return }
 
@@ -132,5 +134,18 @@ struct DiagnosticTestView: View {
 
         moveToNextQuestion()
     }
+
+    /// Computes the user's initial level based on diagnostic performance
+    func computeLevel() {
+        let accuracy = Double(score) / Double(totalQuestions)
+        let averageTime = totalTimeTaken / Double(totalQuestions)
+
+        if accuracy >= 0.8 && averageTime < 5.0 {
+            appState.userLevel = gradeLevel + 2
+        } else if accuracy >= 0.5 {
+            appState.userLevel = gradeLevel + 1
+        } else {
+            appState.userLevel = gradeLevel
+        }
+    }
 }
- 

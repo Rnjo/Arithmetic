@@ -51,5 +51,3 @@ struct GradeSelectionView: View {
         }
     }
 }
-
-

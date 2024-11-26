@@ -19,10 +19,10 @@ struct SettingsView: View {
             
             List {
                 Section(header: Text("Settings")) {
-                    Button("Dark Mode"){
+                    /*Button("Dark Mode"){
                         darkmode = true
                     }
-                    .foregroundColor(.black)
+                    .foregroundColor(.black)*/
                     Button("Reset Data") {
                         showResetConfirmation = true
                     }

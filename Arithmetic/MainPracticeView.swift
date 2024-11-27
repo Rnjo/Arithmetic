@@ -1,6 +1,37 @@
 import SwiftUI
 import AVFoundation
-import AudioToolbox // Import the AudioToolbox framework for system sounds
+
+struct DashboardView: View {
+    var body: some View {
+        VStack {
+            Text("Dashboard")
+                .font(.largeTitle)
+                .bold()
+            Spacer()
+            Text("This is the Dashboard page.")
+                .font(.title2)
+                .padding()
+            Spacer()
+        }
+        .navigationBarTitle("Dashboard", displayMode: .inline)
+    }
+}
+
+struct LeaderboardView: View {
+    var body: some View {
+        VStack {
+            Text("Leaderboard")
+                .font(.largeTitle)
+                .bold()
+            Spacer()
+            Text("This is the Leaderboard page.")
+                .font(.title2)
+                .padding()
+            Spacer()
+        }
+        .navigationBarTitle("Leaderboard", displayMode: .inline)
+    }
+}
 
 struct MainPracticeView: View {
     @EnvironmentObject var appState: AppState
@@ -15,104 +46,126 @@ struct MainPracticeView: View {
     @State private var showSettings = false // State for showing settings view
     @State private var correctSoundPlayer: AVAudioPlayer?
     @State private var errorSoundPlayer: AVAudioPlayer?
+    @State private var levelSoundPlayer: AVAudioPlayer?
+
     @State private var timer: Timer? = nil // Add a timer property to manage it
-    @State private var backgroundOpacity: Double = 0 // Opacity for background color
+    @State private var backgroundOpacity: Double = 0.4 // Initial opacity for background color
     @State private var backgroundColor: Color = .white // Background color to be updated
-    
+
+    @State private var currentTab: Int = 0 // Tracking current tab for swipe navigation
+
     var body: some View {
-        NavigationView {
-            ZStack {
-                //// // Background color with animation
-                backgroundColor
-                    .edgesIgnoringSafeArea(.all)
-                    .opacity(backgroundOpacity)
-                    .animation(.easeInOut(duration: 0.5), value: backgroundOpacity)
-                
-                VStack(spacing: 20) {
-                    Text("Welcome to Practice Mode!")
-                        .font(.headline)
-                    
-                    Text("Level \(userLevel)")
-                        .font(.largeTitle)
-                        .bold()
-                    
-                    Text("What is \(currentQuestion)?")
-                        .font(.title)
-                        .padding()
-                    
-                    // TextField for entering answer
-                    TextField("Enter your answer", text: $userAnswer)
-                        .keyboardType(.decimalPad) // Use decimal pad, but we will handle the input manually
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .padding()
-                        .onChange(of: userAnswer) { newValue in
-                            // Replace period with minus sign
-                            if newValue.contains(".") {
-                                userAnswer = newValue.replacingOccurrences(of: ".", with: "-")
+        ZStack {
+            // Background color with opacity and animation
+            backgroundColor
+                .opacity(backgroundOpacity)
+                .edgesIgnoringSafeArea(.all)
+                .animation(.easeInOut(duration: 0.3), value: backgroundOpacity)
+
+            VStack {
+                // Main content goes here
+                NavigationView {
+                    TabView(selection: $currentTab) {
+                        VStack {
+                            Text("Welcome to Practice Mode!")
+                                .font(.headline)
+                                .padding(.bottom, 20) // Added space between the text
+
+                            Text("Level \(userLevel)")
+                                .font(.largeTitle)
+                                .bold()
+                                .padding(.bottom, 40) // Additional space between level text and the next component
+                            
+                            Text("What is \(currentQuestion)?")
+                                .font(.title)
+                                .padding()
+                            
+                            TextField("Enter your answer", text: $userAnswer)
+                                .keyboardType(.decimalPad)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .padding()
+                                .onChange(of: userAnswer) { newValue in
+                                    // Handle input for decimal places
+                                    if newValue.contains(".") {
+                                        userAnswer = newValue.replacingOccurrences(of: ".", with: "-")
+                                    }
+                                }
+                            
+                            Button("Submit Answer") {
+                                checkAnswer()
                             }
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                            
+                            if showLevelUp {
+                                Text("Level Up! 🎉")
+                                    .font(.largeTitle)
+                                    .foregroundColor(.green)
+                                    .transition(.scale)
+                            }
+                            
+                            Text("Time remaining: \(timeRemaining) seconds")
+                                .font(.headline)
+                                .padding()
                         }
-                    
-                    Button("Submit Answer") {
-                        checkAnswer()
-                    }
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-                    
-                    if showLevelUp {
-                        Text("Level Up! 🎉")
-                            .font(.largeTitle)
-                            .foregroundColor(.green)
-                            .transition(.scale)
-                    }
-                    
-                    Text("Time remaining: \(timeRemaining) seconds")
-                        .font(.headline)
-                        .padding()
-                }
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button(action: {
-                            showSettings = true
-                        }) {
-                            Image(systemName: "gear")
-                                .font(.title2)
+                        .tabItem {
+                            Image(systemName: "house.fill")
+                            Text("Practice")
                         }
+                        .tag(0)
+                        
+                        DashboardView()
+                            .tabItem {
+                                Image(systemName: "star.fill")
+                                Text("Dashboard")
+                            }
+                            .tag(1)
+                        
+                        LeaderboardView()
+                            .tabItem {
+                                Image(systemName: "list.dash")
+                                Text("Leaderboard")
+                            }
+                            .tag(2)
+                    }
+                    .navigationBarItems(trailing: Button(action: {
+                        showSettings = true
+                    }) {
+                        Image(systemName: "gear")
+                            .font(.title2)
+                    })
+                    .onAppear {
+                        configureAudioSession()
+                        loadSounds()
+                        generateQuestion()
+                        startTimer()
+                    }
+                    .onDisappear {
+                        timer?.invalidate()
+                    }
+                    .sheet(isPresented: $showSettings) {
+                        SettingsView(userLevel: $userLevel)
+                            .environmentObject(appState)
                     }
                 }
-            }
-            .onAppear {
-                configureAudioSession()
-                loadSounds()
-                generateQuestion()
-                startTimer()
-            }
-            .onDisappear {
-                timer?.invalidate() // Stop the timer when the view disappears
-            }
-            .sheet(isPresented: $showSettings) {
-                SettingsView(userLevel: $userLevel)
-                    .environmentObject(appState)
             }
         }
     }
     
-    /// Generates a new question based on the user's current level
     func generateQuestion() {
-        // Invalidate any existing timer before generating the question
         timer?.invalidate()
         userAnswer = ""
         message = ""
         
-        // Generate the new question
         let result = generateGlobalQuestion(level: userLevel)
         currentQuestion = result.question
         correctAnswer = result.answer
         
-        startTimer() // Start the timer for the new question
+        startTimer()
     }
-
+    
     func loadSounds() {
         if let correctSoundURL = Bundle.main.url(forResource: "correct_sound", withExtension: "mp3") {
             correctSoundPlayer = try? AVAudioPlayer(contentsOf: correctSoundURL)
@@ -120,9 +173,17 @@ struct MainPracticeView: View {
         if let errorSoundURL = Bundle.main.url(forResource: "error_sound", withExtension: "mp3") {
             errorSoundPlayer = try? AVAudioPlayer(contentsOf: errorSoundURL)
         }
+        if let levelSoundURL = Bundle.main.url(forResource: "level-sound", withExtension: "mp3") {
+            levelSoundPlayer = try? AVAudioPlayer(contentsOf: levelSoundURL)
+        }
     }
-
+    
     func playSuccessSound() {
+        correctSoundPlayer?.play()
+    }
+    
+    func playLevelSound() {
+        levelSoundPlayer?.play()
         correctSoundPlayer?.play()
     }
     
@@ -130,45 +191,44 @@ struct MainPracticeView: View {
         errorSoundPlayer?.play()
     }
     
-    /// Checks if the user's answer is correct
     func checkAnswer() {
         if let userAnswer = Double(userAnswer), abs(userAnswer - correctAnswer) < 0.001 {
             score += 1
-            if score % 5 == 0 { // Level up every 5 correct answers
+            if score % 5 == 0 {
                 incrementLevel()
             }
-            flashBackground(isCorrect: true) // Flash green for correct answer
-            playSuccessSound() // Play success sound
-            generateQuestion() // Generate the next question
+            flashBackground(isCorrect: true)
+            playSuccessSound()
+            generateQuestion()
         } else {
             message = "Incorrect, try again."
             score = 0
-            flashBackground(isCorrect: false) // Flash red for incorrect answer
-            playErrorSound() // Play error sound
+            flashBackground(isCorrect: false)
+            playErrorSound()
             generateQuestion()
         }
     }
     
-    /// Flashes the background in green or red based on correctness
     func flashBackground(isCorrect: Bool) {
+        // Flash background color when answer is correct or incorrect
         if isCorrect {
-            backgroundColor = .green // Bright green for correct answer
+            backgroundColor = .green
             backgroundOpacity = 1.0
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                backgroundOpacity = 0.4 // Fade to light green
-            }
         } else {
-            backgroundColor = .red // Bright red for incorrect answer
+            backgroundColor = .red
             backgroundOpacity = 1.0
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                backgroundOpacity = 0.4 // Fade to light red
-            }
+        }
+        
+        // Animate opacity and reset it after a brief delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            backgroundOpacity = 0.4
         }
     }
     
-    /// Increments the user's level and shows the level-up animation
     func incrementLevel() {
-        userLevel += 1 // Increment level
+        playLevelSound()
+        
+        userLevel += 1
         withAnimation {
             showLevelUp = true
         }
@@ -176,7 +236,7 @@ struct MainPracticeView: View {
             showLevelUp = false
         }
     }
-
+    
     func configureAudioSession() {
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [])
@@ -185,27 +245,30 @@ struct MainPracticeView: View {
             print("Failed to configure audio session: \(error)")
         }
     }
-
-    /// Starts the timer for the current question
+    
     func startTimer() {
-        timer?.invalidate()  // Invalidate any existing timer
+        timer?.invalidate()
         
-        // Adjust the timeRemaining based on the user's level
-        if userLevel < 10 {
-            timeRemaining = 4 // Start with 4 seconds for levels below 10
+        if userLevel >= 1 && userLevel <= 4 {
+            timeRemaining = 4
+        } else if userLevel >= 5 && userLevel <= 9 {
+            timeRemaining = 5
+        } else if userLevel >= 10 && userLevel <= 14 {
+            timeRemaining = 6
+        } else if userLevel >= 15 && userLevel <= 19 {
+            timeRemaining = 7
+        } else if userLevel >= 20 && userLevel <= 24 {
+            timeRemaining = 8
         } else {
-            // For every 10 levels, add 1 second to the timer
-            timeRemaining = 4 + ((userLevel - 1) / 10)
+            timeRemaining = 9 + ((userLevel - 25) / 5)
         }
         
-        // Create a new timer and start it
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
             if timeRemaining > 0 {
                 timeRemaining -= 1
             } else {
-                // Time's up, consider it as incorrect and move to the next question
-                flashBackground(isCorrect: false) // Flash red for incorrect answer
-                generateQuestion() // Generate the next question when time runs out
+                flashBackground(isCorrect: false)
+                generateQuestion()
             }
         }
     }

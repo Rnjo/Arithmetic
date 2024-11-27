@@ -49,8 +49,6 @@ struct MainPracticeView: View {
     @State private var levelSoundPlayer: AVAudioPlayer?
 
     @State private var timer: Timer? = nil // Add a timer property to manage it
-    @State private var backgroundOpacity: Double = 0.4 // Initial opacity for background color
-    @State private var backgroundColor: Color = .white // Background color to be updated
 
     @State private var currentTab: Int = 0 // Tracking current tab for swipe navigation
 
@@ -197,31 +195,13 @@ struct MainPracticeView: View {
             if score % 5 == 0 {
                 incrementLevel()
             }
-            flashBackground(isCorrect: true)
             playSuccessSound()
             generateQuestion()
         } else {
             message = "Incorrect, try again."
             score = 0
-            flashBackground(isCorrect: false)
             playErrorSound()
             generateQuestion()
-        }
-    }
-    
-    func flashBackground(isCorrect: Bool) {
-        // Flash background color when answer is correct or incorrect
-        if isCorrect {
-            backgroundColor = .green
-            backgroundOpacity = 1.0
-        } else {
-            backgroundColor = .red
-            backgroundOpacity = 1.0
-        }
-        
-        // Animate opacity and reset it after a brief delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            backgroundOpacity = 0.4
         }
     }
     
@@ -267,7 +247,6 @@ struct MainPracticeView: View {
             if timeRemaining > 0 {
                 timeRemaining -= 1
             } else {
-                flashBackground(isCorrect: false)
                 generateQuestion()
             }
         }

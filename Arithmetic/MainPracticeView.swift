@@ -52,6 +52,7 @@ struct CompetitionView: View {
 struct MainPracticeView: View {
     @EnvironmentObject var appState: AppState
     @Binding var userLevel: Int // User's current level
+    @State private var consecutiveWrongAnswers = 0 // Track consecutive wrong answers
     @State private var currentQuestion = ""
     @State private var correctAnswer: Double = 0
     @State private var userAnswer = ""
@@ -59,10 +60,13 @@ struct MainPracticeView: View {
     @State private var score = 0
     @State private var timeRemaining = 4 // Default to 4 seconds
     @State private var showLevelUp = false
+    @State private var showLevelDown = false
     @State private var showSettings = false // State for showing settings view
     @State private var correctSoundPlayer: AVAudioPlayer?
     @State private var errorSoundPlayer: AVAudioPlayer?
     @State private var levelSoundPlayer: AVAudioPlayer?
+    @State private var leveldownSoundPlayer: AVAudioPlayer?
+
 
     @State private var timer: Timer? = nil // Add a timer property to manage it
 
@@ -109,6 +113,13 @@ struct MainPracticeView: View {
                                 Text("Level Up! 🎉")
                                     .font(.largeTitle)
                                     .foregroundColor(.green)
+                                    .transition(.scale)
+                            }
+                            
+                            if showLevelDown {
+                                Text("Level Down 🤦")
+                                    .font(.largeTitle)
+                                    .foregroundColor(.red)
                                     .transition(.scale)
                             }
                             
@@ -196,9 +207,16 @@ struct MainPracticeView: View {
         if let errorSoundURL = Bundle.main.url(forResource: "error_sound", withExtension: "mp3") {
             errorSoundPlayer = try? AVAudioPlayer(contentsOf: errorSoundURL)
         }
-        if let levelSoundURL = Bundle.main.url(forResource: "level-sound", withExtension: "mp3") {
+        if let levelSoundURL = Bundle.main.url(forResource: "levelup_sound", withExtension: "mp3") {
             levelSoundPlayer = try? AVAudioPlayer(contentsOf: levelSoundURL)
         }
+        if let leveldownSoundURL = Bundle.main.url(forResource: "leveldown_sound", withExtension: "mp3") {
+            leveldownSoundPlayer = try? AVAudioPlayer(contentsOf: leveldownSoundURL)
+        }
+    }
+    
+    func playLevelDownSound() {
+        leveldownSoundPlayer?.play()
     }
     
     func playSuccessSound() {
@@ -208,7 +226,6 @@ struct MainPracticeView: View {
     
     func playLevelSound() {
         levelSoundPlayer?.play()
-        correctSoundPlayer?.play()
     }
     
     func playErrorSound() {
@@ -218,6 +235,7 @@ struct MainPracticeView: View {
     func checkAnswer() {
         if let userAnswer = Double(userAnswer), abs(userAnswer - correctAnswer) < 0.001 {
             score += 1
+            consecutiveWrongAnswers = 0 // Reset consecutive wrong answers on a correct answer
             if score % 5 == 0 {
                 incrementLevel()
             }
@@ -226,6 +244,14 @@ struct MainPracticeView: View {
         } else {
             message = "Incorrect, try again."
             score = 0
+            consecutiveWrongAnswers += 1 // Increment consecutive wrong answers
+            
+            // Check if the user got 5 wrong in a row
+            if consecutiveWrongAnswers >= 5 {
+                decrementLevel() // Call the decrementLevel function after 5 wrong answers
+                consecutiveWrongAnswers = 0 // Reset after level decrement
+            }
+
             playErrorSound()
             generateQuestion()
         }
@@ -240,6 +266,18 @@ struct MainPracticeView: View {
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             showLevelUp = false
+        }
+    }
+    
+    func decrementLevel() {
+        playLevelDownSound()
+        
+        userLevel -= 1
+        withAnimation {
+            showLevelDown = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            showLevelDown = false
         }
     }
     

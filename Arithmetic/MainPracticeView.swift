@@ -71,18 +71,17 @@ struct MainPracticeView: View {
     var body: some View {
         ZStack {
             VStack {
-                // Main content goes here
                 NavigationView {
                     TabView(selection: $currentTab) {
                         VStack {
                             Text("Welcome to Practice Mode!")
                                 .font(.headline)
-                                .padding(.bottom, 20) // Added space between the text
+                                .padding(.bottom, 20)
 
                             Text("Level \(userLevel)")
                                 .font(.largeTitle)
                                 .bold()
-                                .padding(.bottom, 40) // Additional space between level text and the next component
+                                .padding(.bottom, 35)
                             
                             Text("What is \(currentQuestion)?")
                                 .font(.title)
@@ -93,7 +92,6 @@ struct MainPracticeView: View {
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .padding()
                                 .onChange(of: userAnswer) { newValue in
-                                    // Handle input for decimal places
                                     if newValue.contains(".") {
                                         userAnswer = newValue.replacingOccurrences(of: ".", with: "-")
                                     }
@@ -117,6 +115,10 @@ struct MainPracticeView: View {
                             Text("Time remaining: \(timeRemaining) seconds")
                                 .font(.headline)
                                 .padding()
+                        }
+                        .contentShape(Rectangle()) // Makes the whole view tappable
+                        .onTapGesture {
+                            hideKeyboard() // Dismiss the keyboard when tapping outside
                         }
                         .tabItem {
                             Image(systemName: "house.fill")
@@ -167,6 +169,13 @@ struct MainPracticeView: View {
             }
         }
     }
+    
+    func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+
+    // All existing functions below remain unchanged
+    
     
     func generateQuestion() {
         timer?.invalidate()

@@ -1,6 +1,6 @@
 import SwiftUI
 import AVFoundation
-
+//
 struct DashboardView: View {
     @Binding var totalQuestionsAnswered: Int
     @Binding var correctAnswers: Int
@@ -416,4 +416,5 @@ struct MainPracticeView: View {
         }
     }
 }
+
 

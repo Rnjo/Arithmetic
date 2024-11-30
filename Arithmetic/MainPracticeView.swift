@@ -2,20 +2,107 @@ import SwiftUI
 import AVFoundation
 
 struct DashboardView: View {
+    @Binding var totalQuestionsAnswered: Int
+    @Binding var correctAnswers: Int
+    @Binding var userLevel: Int
+    @Binding var highestLevel: Int // Highest level reached
+
+    var accuracy: Double {
+        totalQuestionsAnswered > 0 ? (Double(correctAnswers) / Double(totalQuestionsAnswered)) * 100 : 0
+    }
+
     var body: some View {
-        VStack {
-            Text("Dashboard")
-                .font(.largeTitle)
-                .bold()
-            Spacer()
-            Text("This is the Dashboard page.")
-                .font(.title2)
-                .padding()
+        VStack(spacing: 20) {
+            // Header
+            VStack {
+                Text("Dashboard")
+                    .font(.largeTitle)
+                    .bold()
+                    .padding(.bottom, 10)
+
+                Text("Track your progress and performance here!")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            .padding(.top)
+
+            Divider()
+
+            // Current and Highest Level
+            VStack(spacing: 10) {
+                Text("📈 Your Current Level")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text("\(userLevel)")
+                    .font(.system(size: 40, weight: .bold, design: .rounded))
+                    .foregroundColor(.blue)
+
+                Text("🏆 Highest Level Achieved")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text("\(highestLevel)")
+                    .font(.system(size: 40, weight: .bold, design: .rounded))
+                    .foregroundColor(.green)
+            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(UIColor.secondarySystemBackground))
+                    .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+            )
+
+            Divider()
+
+            // Performance Summary
+            VStack(spacing: 10) {
+                Text("📊 Performance Summary")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                HStack {
+                    VStack(alignment: .leading) {
+                        Text("Total Questions Answered:")
+                            .font(.subheadline)
+                        Text("\(totalQuestionsAnswered)")
+                            .font(.title2)
+                            .foregroundColor(.primary)
+                    }
+                    Spacer()
+
+                    VStack(alignment: .leading) {
+                        Text("Correct Answers:")
+                            .font(.subheadline)
+                        Text("\(correctAnswers)")
+                            .font(.title2)
+                            .foregroundColor(.primary)
+                    }
+                }
+
+                HStack {
+                    Text("Accuracy:")
+                        .font(.subheadline)
+                    Spacer()
+                    Text("\(String(format: "%.2f", accuracy))%")
+                        .font(.title2)
+                        .foregroundColor(accuracy >= 80 ? .green : .red)
+                }
+            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(UIColor.secondarySystemBackground))
+                    .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+            )
+
             Spacer()
         }
+        .padding()
+        .background(Color(UIColor.systemGroupedBackground))
         .navigationBarTitle("Dashboard", displayMode: .inline)
     }
 }
+
+
 
 struct LeaderboardView: View {
     var body: some View {
@@ -54,6 +141,11 @@ struct MainPracticeView: View {
     @Binding var userLevel: Int // User's current level
     @State private var consecutiveWrongAnswers = 0 // Track consecutive wrong answers
     @State private var currentQuestion = ""
+    
+    @State public var correctAnswers = 0
+    @State public var totalQuestionsAnswered = 0
+    @State public var highestLevel: Int = 0
+    
     @State private var correctAnswer: Double = 0
     @State private var userAnswer = ""
     @State private var message = ""
@@ -66,12 +158,12 @@ struct MainPracticeView: View {
     @State private var errorSoundPlayer: AVAudioPlayer?
     @State private var levelSoundPlayer: AVAudioPlayer?
     @State private var leveldownSoundPlayer: AVAudioPlayer?
-
-
+    
+    
     @State private var timer: Timer? = nil // Add a timer property to manage it
-
+    
     @State private var currentTab: Int = 0 // Tracking current tab for swipe navigation
-
+    
     var body: some View {
         ZStack {
             VStack {
@@ -81,7 +173,7 @@ struct MainPracticeView: View {
                             Text("Welcome to Practice Mode!")
                                 .font(.headline)
                                 .padding(.bottom, 20)
-
+                            
                             Text("Level \(userLevel)")
                                 .font(.largeTitle)
                                 .bold()
@@ -137,12 +229,19 @@ struct MainPracticeView: View {
                         }
                         .tag(0)
                         
-                        DashboardView()
-                            .tabItem {
-                                Image(systemName: "star.fill")
-                                Text("Dashboard")
-                            }
-                            .tag(1)
+                        DashboardView(
+                            totalQuestionsAnswered: $totalQuestionsAnswered,
+                            correctAnswers: $correctAnswers,
+                            userLevel: $userLevel,
+                            highestLevel: $highestLevel
+                        )
+                        .tabItem {
+                            Image(systemName: "star.fill")
+                            Text("Dashboard")
+                        }
+                        .tag(1)
+                        
+                        
                         
                         LeaderboardView()
                             .tabItem {
@@ -184,7 +283,7 @@ struct MainPracticeView: View {
     func hideKeyboard() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
-
+    
     // All existing functions below remain unchanged
     
     
@@ -233,14 +332,16 @@ struct MainPracticeView: View {
     }
     
     func checkAnswer() {
+        totalQuestionsAnswered += 1 // Increment the total questions answered
+        
         if let userAnswer = Double(userAnswer), abs(userAnswer - correctAnswer) < 0.001 {
+            correctAnswers += 1 // Increment correct answers on a correct response
             score += 1
             consecutiveWrongAnswers = 0 // Reset consecutive wrong answers on a correct answer
             if score % 5 == 0 {
                 incrementLevel()
             }
             playSuccessSound()
-            generateQuestion()
         } else {
             message = "Incorrect, try again."
             score = 0
@@ -251,16 +352,22 @@ struct MainPracticeView: View {
                 decrementLevel() // Call the decrementLevel function after 5 wrong answers
                 consecutiveWrongAnswers = 0 // Reset after level decrement
             }
-
             playErrorSound()
-            generateQuestion()
         }
+        
+        generateQuestion()
     }
+    
+    
     
     func incrementLevel() {
         playLevelSound()
         
         userLevel += 1
+        if userLevel > highestLevel {
+            highestLevel = userLevel
+        }
+        
         withAnimation {
             showLevelUp = true
         }
@@ -293,18 +400,11 @@ struct MainPracticeView: View {
     func startTimer() {
         timer?.invalidate()
         
-        if userLevel >= 1 && userLevel <= 4 {
-            timeRemaining = 4
-        } else if userLevel >= 5 && userLevel <= 9 {
-            timeRemaining = 5
-        } else if userLevel >= 10 && userLevel <= 14 {
-            timeRemaining = 6
-        } else if userLevel >= 15 && userLevel <= 19 {
-            timeRemaining = 7
-        } else if userLevel >= 20 && userLevel <= 24 {
-            timeRemaining = 8
+        // Calculate timeRemaining dynamically based on level
+        if userLevel <= 10 {
+            timeRemaining = 9
         } else {
-            timeRemaining = 9 + ((userLevel - 25) / 5)
+            timeRemaining = max(2, 9 - ((userLevel - 1) / 10))
         }
         
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
@@ -316,3 +416,4 @@ struct MainPracticeView: View {
         }
     }
 }
+

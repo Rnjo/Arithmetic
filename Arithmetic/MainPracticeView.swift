@@ -1,12 +1,29 @@
 import SwiftUI
 import AVFoundation
-//
+
+struct UserDefaultsKeys {
+    static let highestLevel = "highestLevel"
+    static let totalQuestionsAnswered = "totalQuestionsAnswered"
+    static let correctAnswers = "correctAnswers"
+    static let sessionQuestionsAnswered = "sessionQuestionsAnswered"
+    static let sessionCorrectAnswers = "sessioncorrectAnswers"
+    
+}
+
 struct DashboardView: View {
+    
+
+    @Binding var sessionQuestionsAnswered: Int
+    @Binding var sessionCorrectAnswers: Int
     @Binding var totalQuestionsAnswered: Int
     @Binding var correctAnswers: Int
     @Binding var userLevel: Int
     @Binding var highestLevel: Int // Highest level reached
 
+    var sessionAccuracy: Double {
+        sessionQuestionsAnswered > 0 ? (Double(sessionCorrectAnswers) / Double(sessionQuestionsAnswered)) * 100 : 0
+    }
+    
     var accuracy: Double {
         totalQuestionsAnswered > 0 ? (Double(correctAnswers) / Double(totalQuestionsAnswered)) * 100 : 0
     }
@@ -55,7 +72,50 @@ struct DashboardView: View {
 
             // Performance Summary
             VStack(spacing: 10) {
-                Text("📊 Performance Summary")
+                Text("📊 Session Summary")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                HStack {
+                    VStack(alignment: .leading) {
+                        Text("Total Questions Answered:")
+                            .font(.subheadline)
+                        Text("\(sessionQuestionsAnswered)")
+                            .font(.title2)
+                            .foregroundColor(.primary)
+                    }
+                    Spacer()
+
+                    VStack(alignment: .leading) {
+                        Text("Correct Answers:")
+                            .font(.subheadline)
+                        Text("\(sessionCorrectAnswers)")
+                            .font(.title2)
+                            .foregroundColor(.primary)
+                    }
+                }
+
+                HStack {
+                    Text("Current session accuracy:")
+                        .font(.subheadline)
+                    Spacer()
+                    Text("\(String(format: "%.2f", sessionAccuracy))%")
+                        .font(.title2)
+                        .foregroundColor(sessionAccuracy >= 80 ? .green : .red)
+                }
+            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(UIColor.secondarySystemBackground))
+                    .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+            )
+            
+            
+            
+            Divider()
+            VStack(spacing: 10) {
+                Text("📈 Performance Summary")
                     .font(.headline)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -79,7 +139,7 @@ struct DashboardView: View {
                 }
 
                 HStack {
-                    Text("Accuracy:")
+                    Text("Overall accuracy:")
                         .font(.subheadline)
                     Spacer()
                     Text("\(String(format: "%.2f", accuracy))%")
@@ -93,13 +153,13 @@ struct DashboardView: View {
                     .fill(Color(UIColor.secondarySystemBackground))
                     .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
             )
-
-            Spacer()
         }
         .padding()
         .background(Color(UIColor.systemGroupedBackground))
         .navigationBarTitle("Dashboard", displayMode: .inline)
+        
     }
+    
 }
 
 
@@ -145,6 +205,9 @@ struct MainPracticeView: View {
     @State public var correctAnswers = 0
     @State public var totalQuestionsAnswered = 0
     @State public var highestLevel: Int = 0
+    
+    @State public var sessionQuestionsAnswered = 0
+    @State public var sessionCorrectAnswers = 0
     
     @State private var correctAnswer: Double = 0
     @State private var userAnswer = ""
@@ -230,10 +293,13 @@ struct MainPracticeView: View {
                         .tag(0)
                         
                         DashboardView(
+                            sessionQuestionsAnswered: $sessionQuestionsAnswered,
+                            sessionCorrectAnswers: $sessionCorrectAnswers,
                             totalQuestionsAnswered: $totalQuestionsAnswered,
                             correctAnswers: $correctAnswers,
                             userLevel: $userLevel,
                             highestLevel: $highestLevel
+                            
                         )
                         .tabItem {
                             Image(systemName: "star.fill")
@@ -263,12 +329,15 @@ struct MainPracticeView: View {
                             .font(.title2)
                     })
                     .onAppear {
+                        //if 
+                        loadPersistentData()
                         configureAudioSession()
                         loadSounds()
                         generateQuestion()
                         startTimer()
                     }
                     .onDisappear {
+                        savePersistentData()
                         timer?.invalidate()
                     }
                     .sheet(isPresented: $showSettings) {
@@ -298,6 +367,22 @@ struct MainPracticeView: View {
         
         startTimer()
     }
+    
+    func loadPersistentData() {
+            // Load persistent data from UserDefaults
+           
+            highestLevel = UserDefaults.standard.integer(forKey: UserDefaultsKeys.highestLevel)
+            totalQuestionsAnswered = UserDefaults.standard.integer(forKey: UserDefaultsKeys.totalQuestionsAnswered)
+            correctAnswers = UserDefaults.standard.integer(forKey: UserDefaultsKeys.correctAnswers)
+        }
+
+        func savePersistentData() {
+            // Save persistent data to UserDefaults
+      
+            UserDefaults.standard.set(highestLevel, forKey: UserDefaultsKeys.highestLevel)
+            UserDefaults.standard.set(totalQuestionsAnswered, forKey: UserDefaultsKeys.totalQuestionsAnswered)
+            UserDefaults.standard.set(correctAnswers, forKey: UserDefaultsKeys.correctAnswers)
+        }
     
     func loadSounds() {
         if let correctSoundURL = Bundle.main.url(forResource: "correct_sound", withExtension: "mp3") {
@@ -332,9 +417,11 @@ struct MainPracticeView: View {
     }
     
     func checkAnswer() {
+        sessionQuestionsAnswered+=1
         totalQuestionsAnswered += 1 // Increment the total questions answered
         
         if let userAnswer = Double(userAnswer), abs(userAnswer - correctAnswer) < 0.001 {
+            sessionCorrectAnswers+=1
             correctAnswers += 1 // Increment correct answers on a correct response
             score += 1
             consecutiveWrongAnswers = 0 // Reset consecutive wrong answers on a correct answer

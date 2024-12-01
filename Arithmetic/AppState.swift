@@ -28,6 +28,10 @@ class AppState: ObservableObject {
         }
     }
 
+    // Performance summary variables (not persisted)
+    @Published var totalQuestionsAnswered: Int = 0
+    @Published var correctAnswers: Int = 0
+
     // UserDefaults keys
     private enum UserDefaultsKeys {
         static let diagnosticCompleted = "DiagnosticCompleted"
@@ -70,11 +74,15 @@ class AppState: ObservableObject {
         self.diagnosticCompleted = false
         self.userLevel = 8 // Reset userLevel to default grade level
         self.currentView = .gradeSelection
-        
+
+        // Reset performance summary
+        self.totalQuestionsAnswered = 0
+        self.correctAnswers = 0
+
         // Reset UserDefaults
         UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.diagnosticCompleted)
         UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.userLevel)
 
-        print("Data reset: currentView=\(currentView)")
+        print("Data reset: currentView=\(currentView), totalQuestionsAnswered=\(totalQuestionsAnswered), correctAnswers=\(correctAnswers)")
     }
 }

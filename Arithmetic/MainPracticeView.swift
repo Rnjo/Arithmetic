@@ -1,7 +1,8 @@
 import SwiftUI
 import AVFoundation
 
-struct UserDefaultsKeys {
+
+public struct UserDefaultsKeys {
     static let highestLevel = "highestLevel"
     static let totalQuestionsAnswered = "totalQuestionsAnswered"
     static let correctAnswers = "correctAnswers"
@@ -329,7 +330,7 @@ struct MainPracticeView: View {
                             .font(.title2)
                     })
                     .onAppear {
-                        //if 
+                        //if
                         loadPersistentData()
                         configureAudioSession()
                         loadSounds()

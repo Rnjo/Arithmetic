@@ -21,7 +21,16 @@ struct DiagnosticTestView: View {
             Text("Note: Any '.' entered will be automatically replaced with a '-' sign in the keypad.")
                 .font(.subheadline)
                 .foregroundColor(.white)
+                .padding()
+                .background(Color.yellow.opacity(0.2))  // Light background to highlight the note
+                .cornerRadius(8)  // Rounded corners for a softer look
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.yellow, lineWidth: 2)  // Border to make it stand out
+                )
                 .padding(.top, 20)
+                .padding(.horizontal)
+
             
             if showResults {
                 Text("Diagnostic Test Results")
